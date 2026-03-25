@@ -91,8 +91,8 @@ function update() {
     if (state.isIdle) {
         const dx = state.targetX - snake.segments[0].x;
         const dy = state.targetY - snake.segments[0].y;
-        // ターゲットにかなり接近したら次のターゲットへ
-        if (Math.sqrt(dx * dx + dy * dy) < 10) {
+        // ターゲットにある程度接近したら次のターゲットへ（迂回して少し大回りになるため、到達判定を広めにする）
+        if (Math.sqrt(dx * dx + dy * dy) < 80) {
             setRandomTarget();
         }
     }
@@ -104,33 +104,48 @@ function update() {
     
     let isMoving = false;
 
-    // 頭の移動ロジック
-    if (state.isIdle) {
-        // アイドル時はゆっくりと一定の速度で進む（自然なうろつき）
-        if (dist > 0) {
-            const idleSpeed = 2; // うろつき速度
-            head.x += (hDx / dist) * idleSpeed;
-            head.y += (hDy / dist) * idleSpeed;
-            isMoving = true;
+    // ----- 共通のステアリング（旋回）ロジック -----
+    if (dist > 2) { // わずかな遊びを持たせてピタッと止まらせる
+        const targetAngle = Math.atan2(hDy, hDx);
+        
+        let diff = targetAngle - head.angle;
+        // 最も近い回転方向を選ぶ（-PI から PI の範囲内に正規化）
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        
+        // 旋回速度（小回り力）の計算
+        let turnSpeed;
+        if (state.isIdle) {
+            turnSpeed = 0.04; // アイドル時は大きく迂回
+        } else {
+            // ターゲットに極端に近いとき「ぐるぐる回り続ける（オービット現象）」のを防ぐため、
+            // 70px以内に入ったら距離に応じて大きく小回りが利く（急旋回できる）ようにする
+            if (dist < 70) {
+                turnSpeed = 0.12 + (1 - dist / 70) * 0.3; // 近づくほど最大 0.42 の急旋回力
+            } else {
+                turnSpeed = 0.12;
+            }
         }
-    } else {
-        // カーソル追従時
-        if (dist > 15) {
-            // 遠い場合は定速で追従
-            head.x += (hDx / dist) * snake.speed;
-            head.y += (hDy / dist) * snake.speed;
-            isMoving = true;
-        } else if (dist > 0.5) {
-            // 近い場合は滑らかに減速（Lerpで微調整し、引っ張った長さに応じる）
-            head.x += hDx * 0.25;
-            head.y += hDy * 0.25;
-            isMoving = true;
+        
+        if (Math.abs(diff) < turnSpeed) {
+            head.angle = targetAngle;
+        } else {
+            head.angle += Math.sign(diff) * turnSpeed;
         }
-    }
-    
-    // 頭の向いている角度を計算
-    if (isMoving && (Math.abs(hDx) > 0.1 || Math.abs(hDy) > 0.1)) {
-        head.angle = Math.atan2(hDy, hDx);
+        
+        // 移動速度の計算
+        let currentMoveSpeed;
+        if (state.isIdle) {
+            currentMoveSpeed = 2; // うろつき速度
+        } else {
+            // 50px以内から滑らかにブレーキをかけることで、小回りをさらに助ける
+            currentMoveSpeed = (dist > 50) ? snake.speed : (snake.speed * Math.max(0.1, dist / 50));
+        }
+
+        // head.angle の向いている方向に進む（車や船と同じ操舵的な動き）
+        head.x += Math.cos(head.angle) * currentMoveSpeed;
+        head.y += Math.sin(head.angle) * currentMoveSpeed;
+        isMoving = true;
     }
 
     // 履歴に現在の頭の座標を記録する（動いた時のみ）
