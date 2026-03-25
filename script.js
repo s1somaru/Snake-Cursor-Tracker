@@ -30,6 +30,12 @@ window.addEventListener('mousemove', (e) => {
     state.targetY = state.mouseY;
     state.lastMouseMoveTime = Date.now();
     
+    // マウスを動かしている間はテキストを薄くする
+    const infoBox = document.querySelector('.info');
+    if (infoBox && !infoBox.classList.contains('fade')) {
+        infoBox.classList.add('fade');
+    }
+
     // マウスが動いたらすぐ追従に戻る
     if (state.isIdle) {
         state.isIdle = false;
@@ -44,6 +50,12 @@ window.addEventListener('touchmove', (e) => {
     state.targetY = state.mouseY;
     state.lastMouseMoveTime = Date.now();
     
+    // スマホなどでも動かしている間は薄くする
+    const infoBox = document.querySelector('.info');
+    if (infoBox && !infoBox.classList.contains('fade')) {
+        infoBox.classList.add('fade');
+    }
+
     if (state.isIdle) {
         state.isIdle = false;
     }
@@ -83,6 +95,13 @@ function update() {
     if (now - state.lastMouseMoveTime > 2000) {
         if (!state.isIdle) {
             state.isIdle = true;
+            
+            // アイドル状態（うろつき）になったら、見えなくなっていたテキストを再び濃くする
+            const infoBox = document.querySelector('.info');
+            if (infoBox) {
+                infoBox.classList.remove('fade');
+            }
+
             setRandomTarget();
         }
     }

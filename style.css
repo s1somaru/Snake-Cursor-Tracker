@@ -33,6 +33,13 @@ body, html {
     border-radius: 12px;
     border: 2px solid #34495e;
     backdrop-filter: blur(4px);
+    transition: opacity 0.5s ease, backdrop-filter 0.5s ease;
+    width: auto;
+}
+
+.info.fade {
+    opacity: 0.15;
+    backdrop-filter: blur(0px); /* ぼかしも一緒に消して蛇の軌跡をハッキリ見せる */
 }
 
 h1 {
@@ -46,4 +53,21 @@ p {
     font-size: 1.1rem;
     line-height: 1.6;
     margin-bottom: 0;
+}
+
+/* スマホ用のレスポンシブ調整 */
+@media (max-width: 600px) {
+    .info {
+        padding: 15px;
+        width: 85%;
+        max-width: 320px;
+        box-sizing: border-box;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
+    p {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
 }
